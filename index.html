@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,70 +10,77 @@
         .container {
             padding: 20px;
         }
+
         .autocomplete-suggestions {
             border: 1px solid #999;
             max-height: 150px;
             overflow-y: auto;
         }
+
         .autocomplete-suggestion {
             padding: 5px;
             cursor: pointer;
         }
     </style>
 </head>
+
 <body>
 
-<div class="container">
-    <input type="text" id="search" placeholder="Search for a stock..." oninput="onInput(event)">
-    <div id="suggestions" class="autocomplete-suggestions"></div>
-    <div id="stock-info"></div>
-</div>
+    <div class="container">
+        <input type="text" id="search" placeholder="Search for a stock..." oninput="onInput(event)">
+        <div id="suggestions" class="autocomplete-suggestions"></div>
+        <div id="stock-info"></div>
+    </div>
 
-<script>
-    let stocks = [];
-    let selectedStock = null;
+    <script>
+        let stocks = [];
+        let selectedStock = null;
 
-    // Fetch stock list on page load
-    fetch('https://bigpara.hurriyet.com.tr/api/v1/hisse/list')
-        .then(response => response.json())
-        .then(data => {
-            stocks = data.data;
-        })
-        .catch(error => console.error('Error fetching stock list:', error));
+        // Using a CORS proxy to bypass CORS restrictions
+        const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
 
-    function onInput(event) {
-        const query = event.target.value.toUpperCase();
-        const suggestions = stocks.filter(stock => stock.kod.includes(query));
-        displaySuggestions(suggestions);
-    }
+        // Fetch stock list on page load
+        fetch(proxyUrl + 'https://bigpara.hurriyet.com.tr/api/v1/hisse/list')
+            .then(response => response.json())
+            .then(data => {
+                stocks = data.data;
+            })
+            .catch(error => console.error('Error fetching stock list:', error));
 
-    function displaySuggestions(suggestions) {
-        const suggestionsContainer = document.getElementById('suggestions');
-        suggestionsContainer.innerHTML = suggestions.map(suggestion => `
+        function onInput(event) {
+            const query = event.target.value.toUpperCase();
+            const suggestions = stocks.filter(stock => stock.kod.includes(query));
+            displaySuggestions(suggestions);
+        }
+
+        function displaySuggestions(suggestions) {
+            const suggestionsContainer = document.getElementById('suggestions');
+            suggestionsContainer.innerHTML = suggestions.map(suggestion => `
             <div class="autocomplete-suggestion" onclick="onSuggestionClick('${suggestion.kod}')">
                 ${suggestion.kod} - ${suggestion.ad}
             </div>
         `).join('');
-    }
+        }
 
-    function onSuggestionClick(symbol) {
-        fetch(`https://bigpara.hurriyet.com.tr/api/v1/borsa/hisseyuzeysel/${symbol}`)
-            .then(response => response.json())
-            .then(data => {
-                const buyingPrice = data.data.hisseYuzeysel.alis;
-                displayStockInfo(symbol, buyingPrice);
-            })
-            .catch(error => console.error('Error fetching stock info:', error));
-    }
+        function onSuggestionClick(symbol) {
+            fetch(proxyUrl + `https://bigpara.hurriyet.com.tr/api/v1/borsa/hisseyuzeysel/${symbol}`)
+                .then(response => response.json())
+                .then(data => {
+                    const buyingPrice = data.data.hisseYuzeysel.alis;
+                    displayStockInfo(symbol, buyingPrice);
+                })
+                .catch(error => console.error('Error fetching stock info:', error));
+        }
 
-    function displayStockInfo(symbol, buyingPrice) {
-        const stockInfoContainer = document.getElementById('stock-info');
-        stockInfoContainer.innerHTML = `
+        function displayStockInfo(symbol, buyingPrice) {
+            const stockInfoContainer = document.getElementById('stock-info');
+            stockInfoContainer.innerHTML = `
             <strong>${symbol}</strong><br>
             Buying Price: ${buyingPrice}
         `;
-    }
-</script>
+        }
+    </script>
 
 </body>
+
 </html>
